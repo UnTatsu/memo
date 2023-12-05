@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ちょっとしたメモ</title>
+<script src="js/jquery-2.1.3.min.js"></script>
+<link rel="stylesheet" href="css/sample.css">
+</head>
+<body>
+<header>
+  <div class="bg_pattern Lines">
+    <h1>📝 MEMO 📄</h1>
+    <div class="mainCont">
+      <!-- メモ -->
+      <div class="memo">
+          <input type="text" id="key" placeholder="タイトル">
+          <textarea id="memo" placeholder="内容"></textarea>
+          <ul>
+              <li id="save">保存</li>
+              <li id="clear">クリア</li>
+          </ul>
+      </div>
+  
+  
+      <!-- 電卓 -->
+      <div class="calculator">
+          <input readonly id="display" type="text" value="0">
+          <div class="commands">
+            <button class="command ac" onclick="c_click()">C</button>
+            <button class="command operator squared" onclick="ope_click('^')">^</button>
+            <button class="command operator root" onclick="num_click('^0.5')">√</button>
+            <button class="command operator division" onclick="ope_click(this.innerHTML)">÷</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">7</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">8</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">9</button>
+            <button class="command operator multi" onclick="ope_click(this.innerHTML)">×</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">4</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">5</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">6</button>
+            <button class="command operator sub" onclick="ope_click(this.innerHTML)">-</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">1</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">2</button>
+            <button class="command number" onclick="num_click(this.innerHTML)">3</button>
+            <button class="command operator add" onclick="ope_click(this.innerHTML)">+</button>
+            <button class="command number-2col" onclick="num_click(this.innerHTML)">0</button>
+            <button class="command dot" onclick="num_click(this.innerHTML)">.</button>
+            <button class="command equal" onclick="equal_click()">＝</button>
+          </div>
+        </div>
+
+    </div>
+  </div>
+
+
+</header>
+<main>
+
+</main>
+<table id="list">
+<!-- ここに追加データが挿入される -->
+</table>
+<script>
+
+//1.Save クリックイベント
+$("#save").on("click",function(){
+    const key = $("#key").val();
+    const value = $("#memo").val();
+    localStorage.setItem(key,value);
+    const html = '<tr><th>'+key+'</th><td>'+value+'</td><td><button class="revise">修正</button></td><td><button class="delite">削除</button></td></tr>';
+    $("#list").append(html);
+});
+
+//2.clear クリックイベント
+$("#clear").on("click",function(){
+    let key = document.getElementById('key').value = "";
+    let value = document.getElementById('memo').value = "";
+});
+
+//3.ページ読み込み：保存データ取得表示
+for(let i=0; i<localStorage.length; i++){
+    const key   = localStorage.key(i);
+    const value = localStorage.getItem(key);
+    const html = '<tr><th>'+key+'</th><td>'+value+'</td><td><button class="revise">修正</button></td><td><button class="delite">削除</button></td></tr>';
+    $("#list").append(html);
+}
+
+//4.修正 クリックイベント
+$(".revise").on("click",function(){
+    let key =  document.getElementById('key').value = $(this).closest('tr').children('th').eq(0).text(); //選択した行のkey取得＆表示
+    let value =  document.getElementById('memo').value = $(this).closest('tr').children('td').eq(0).text(); //選択した行のvalue取得＆表示
+})
+
+//5.削除 クリックイベント
+$(".delite").on("click",function(){
+    let key = $(this).closest('tr').children('th').eq(0).text(); //選択した行のkey取得＆表示
+    let value = $(this).closest('tr').children('td').eq(0).text(); //選択した行のvalue取得＆表示
+    localStorage.removeItem(key);
+    location.reload();
+})
+
+//6.電卓計算
+let result = "";
+let is_calc = false; //計算状況判定用 false→未計算状態
+
+window.onload = function(){ //読み込み時に実行
+  result = document.getElementById('display'); //displayにresultを反映
+} 
+
+function c_click(){ //クリアー
+  result.value = "0"; 
+  is_calc = false;
+}
+
+function num_click(val){ //数字クリック時の挙動
+  if(is_calc)  result.value = "0"; //計算済の場合初期化
+  is_calc = false;  
+
+  if(result.value =="0" && val == "0"){ //初期に０入力
+    result.value = "0";
+  }else if(result.value == "0" && val == "."){ //初期に.入力
+    result.value = "0.";
+  }else if(result.value == "0"){ //初期にその他数字入力
+    result.value = val;
+  }else{ //それ以外では数字追加
+    result.value += val;
+  }
+}
+
+function ope_click(val){ //演算子クリック時の挙動
+  if(is_calc)  is_calc = false;
+  
+  if(is_ope_last()){
+    result.value = result.value.slice(0, -1) + val; //演算子が重なる場合は書き換え
+  } else {
+    result.value += val; //演算子追加
+  }
+}
+
+function equal_click(){
+  if(is_ope_last())  result.value = result.value.slice(0, -1); //最後が演算子の場合に除去
+
+  let memo_cal =document.getElementById('memo') ;
+  memo_cal.value = result.value; //計算式をmemoに表示
+
+  let temp = new Function("return " + result.value.replaceAll("×", "*").replaceAll("÷", "/").replaceAll("^", "**"))(); //計算用の演算子に置換
+  if(temp == Infinity || Number.isNaN(temp)){
+    result.value = "Error"; //無限大か計算不可時にエラー表示
+  }else{
+    result.value = temp.toLocaleString(); //3桁区切りで表示
+    let key_cal =document.getElementById('key') ;
+    key_cal.value = result.value; //計算結果をkeyに表示
+    is_calc = true; //計算済フラグ
+  }
+
+}
+
+function is_ope_last(){ //末尾の演算子判定
+  return ["+","-","×","÷","^"].includes(result.value.toString().slice(-1));
+}
+
+
+
+</script>
+<footer><small>babybeat22</small></footer>
+</body>
+</html>
